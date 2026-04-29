@@ -3,443 +3,134 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Guide IA — Explore le monde !</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <title>Guide IA — Histoire à portée de main</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --sky: #0ea5e9;
-      --sky-dark: #0369a1;
-      --sun: #fbbf24;
-      --grass: #22c55e;
-      --ground: #14532d;
-      --card: #ffffff;
-      --text: #1e293b;
-      --text-light: #64748b;
-      --accent: #f97316;
-      --bubble: #f0fdf4;
-      --radius: 20px;
+      --parchment: #fdf6e3;
+      --ink: #2c1a0e;
+      --ink-light: #6b4c2a;
+      --red: #c0392b;
+      --blue: #1a5276;
+      --gold: #d4ac0d;
+      --card-bg: #fffdf7;
+      --border: #d4c5a9;
+      --radius: 16px;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: #2c1a0e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
 
-    body {
-      font-family: 'Nunito', sans-serif;
-      background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 40%, #d1fae5 70%, #bbf7d0 100%);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 0 0 40px;
-      overflow-x: hidden;
-    }
+    .header { width: 100%; background: linear-gradient(135deg, #1a0a02, #3d1f08, #1a0a02); padding: 18px 20px 14px; text-align: center; border-bottom: 3px solid var(--gold); position: relative; }
+    .header::after { content: '✦ ✦ ✦'; display: block; color: var(--gold); font-size: .65rem; letter-spacing: 6px; margin-top: 6px; opacity: .7; }
+    .app-title { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 900; color: var(--gold); text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+    .app-sub { font-size: .78rem; color: #c8a96e; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+    .compass-wrap { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .compass { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.08); border: 2px solid rgba(212,172,13,.5); display: flex; align-items: center; justify-content: center; }
+    .needle { width: 3px; height: 26px; border-radius: 2px; background: linear-gradient(180deg, var(--red) 50%, #94a3b8 50%); transition: transform .4s ease; transform-origin: center; }
+    .compass-label { font-size: 9px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
 
-    /* ——— Sky scene ——— */
-    .scene {
-      width: 100%;
-      height: 180px;
-      position: relative;
-      overflow: hidden;
-    }
+    .container { width: min(96vw, 480px); padding: 0 0 40px; display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
 
-    .cloud {
-      position: absolute;
-      background: white;
-      border-radius: 50px;
-      opacity: 0.85;
-    }
-    .cloud::before, .cloud::after {
-      content: '';
-      position: absolute;
-      background: white;
-      border-radius: 50%;
-    }
-    .cloud-1 { width: 100px; height: 32px; top: 30px; left: -120px; animation: drift 18s linear infinite; }
-    .cloud-1::before { width: 50px; height: 50px; top: -22px; left: 10px; }
-    .cloud-1::after  { width: 36px; height: 36px; top: -14px; left: 40px; }
-    .cloud-2 { width: 140px; height: 38px; top: 60px; left: -160px; animation: drift 26s linear infinite 6s; opacity: 0.65; }
-    .cloud-2::before { width: 60px; height: 60px; top: -28px; left: 18px; }
-    .cloud-2::after  { width: 44px; height: 44px; top: -18px; left: 60px; }
-    .cloud-3 { width: 80px; height: 24px; top: 20px; left: -100px; animation: drift 22s linear infinite 12s; opacity: 0.55; }
-    .cloud-3::before { width: 38px; height: 38px; top: -18px; left: 8px; }
-    .cloud-3::after  { width: 28px; height: 28px; top: -10px; left: 32px; }
+    .card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+    .loc-bar { display: flex; align-items: center; gap: 10px; }
+    .loc-info { flex: 1; }
+    .loc-text { font-size: .82rem; font-weight: 700; color: var(--ink); }
+    .loc-coords { font-size: .72rem; color: var(--ink-light); font-weight: 600; margin-top: 1px; }
+    .dir-badge { display: none; align-items: center; gap: 4px; background: #eaf4fb; border: 1.5px solid #aed6f1; border-radius: 8px; padding: 4px 10px; font-size: .74rem; font-weight: 700; color: var(--blue); flex-shrink: 0; }
 
-    @keyframes drift {
-      from { transform: translateX(0); }
-      to   { transform: translateX(calc(100vw + 200px)); }
-    }
+    .map-wrap { border-radius: var(--radius); overflow: hidden; border: 2px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,.35); }
+    #map { width: 100%; height: 240px; }
+    .map-legend { display: flex; gap: 16px; padding: 7px 14px; background: var(--parchment); border-top: 1px solid var(--border); }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; color: var(--ink-light); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+    .dot-me { background: #1a5276; } .dot-site { background: #c0392b; }
 
-    .sun {
-      position: absolute;
-      top: 18px; right: 30px;
-      width: 54px; height: 54px;
-      background: var(--sun);
-      border-radius: 50%;
-      box-shadow: 0 0 0 10px rgba(251,191,36,.25), 0 0 0 22px rgba(251,191,36,.1);
-      animation: pulse-sun 3s ease-in-out infinite;
-    }
-    @keyframes pulse-sun {
-      0%,100% { box-shadow: 0 0 0 10px rgba(251,191,36,.25), 0 0 0 22px rgba(251,191,36,.1); }
-      50%      { box-shadow: 0 0 0 14px rgba(251,191,36,.35), 0 0 0 28px rgba(251,191,36,.15); }
-    }
+    .apikey-section { border: 2px dashed var(--border); border-radius: var(--radius); padding: 12px 14px; background: var(--parchment); transition: border-color .2s, background .2s; }
+    .apikey-section.saved { border-color: #a9dfbf; background: #f0fdf4; border-style: solid; }
+    .apikey-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+    .apikey-label { font-size: .82rem; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+    .apikey-status { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; background: #fef3c7; color: #92400e; }
+    .apikey-status.ok { background: #dcfce7; color: #166534; }
+    .apikey-body { display: none; margin-top: 10px; flex-direction: column; gap: 8px; }
+    .apikey-body.open { display: flex; }
+    .apikey-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: monospace; font-size: .8rem; color: var(--ink); background: white; outline: none; }
+    .apikey-input:focus { border-color: var(--blue); }
+    .apikey-actions { display: flex; gap: 8px; }
+    .apikey-save { flex: 1; padding: 9px; border: none; border-radius: 10px; background: var(--blue); color: white; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .85rem; cursor: pointer; }
+    .apikey-clear { padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: white; color: var(--red); font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .82rem; cursor: pointer; }
+    .apikey-hint { font-size: .72rem; color: var(--ink-light); font-weight: 600; }
+    .apikey-hint a { color: var(--blue); }
 
-    /* compass needle */
-    .compass-wrap {
-      position: absolute;
-      bottom: 18px; left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-    .compass {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: white;
-      border: 3px solid #cbd5e1;
-      display: flex; align-items: center; justify-content: center;
-      position: relative;
-      box-shadow: 0 2px 8px rgba(0,0,0,.12);
-    }
-    .needle {
-      width: 4px; height: 32px;
-      border-radius: 2px;
-      background: linear-gradient(180deg, #ef4444 50%, #94a3b8 50%);
-      transition: transform .4s ease;
-      transform-origin: center center;
-    }
-    .compass-label { font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 1px; }
+    .guide-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; border: none; border-radius: var(--radius); background: linear-gradient(135deg, #6e2510, #c0392b, #6e2510); color: var(--parchment); font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(192,57,43,.4); transition: transform .15s, box-shadow .15s; position: relative; overflow: hidden; }
+    .guide-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(192,57,43,.5); }
+    .guide-btn:active { transform: translateY(1px); }
+    .guide-btn:disabled { background: #6b7280; box-shadow: none; cursor: not-allowed; transform: none; }
+    .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,.25); width: 10px; height: 10px; animation: ripple-anim .6s ease-out forwards; pointer-events: none; }
+    @keyframes ripple-anim { to { transform: scale(30); opacity: 0; } }
 
-    /* ——— Main card ——— */
-    .card {
-      width: min(92vw, 440px);
-      background: var(--card);
-      border-radius: var(--radius);
-      padding: 28px 24px 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
-      margin-top: -24px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .app-title {
-      font-family: 'Fredoka One', cursive;
-      font-size: 2rem;
-      color: var(--sky-dark);
-      text-align: center;
-      line-height: 1.1;
-    }
-    .app-sub {
-      text-align: center;
-      font-size: 0.88rem;
-      color: var(--text-light);
-      margin-top: 4px;
-      font-weight: 600;
-    }
-
-    /* location bar */
-    .loc-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #f8fafc;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 10px 14px;
-      margin-top: 18px;
-    }
-    .loc-icon { font-size: 1.3rem; }
-    .loc-text { font-size: 0.82rem; font-weight: 700; color: var(--text-light); flex: 1; }
-    .loc-coords { font-size: 0.78rem; color: #94a3b8; font-weight: 600; }
-
-    /* big button */
-    .guide-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      margin-top: 20px;
-      padding: 18px;
-      border: none;
-      border-radius: 16px;
-      background: linear-gradient(135deg, var(--grass), #16a34a);
-      color: white;
-      font-family: 'Fredoka One', cursive;
-      font-size: 1.45rem;
-      letter-spacing: .5px;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(34,197,94,.4);
-      transition: transform .15s, box-shadow .15s;
-      position: relative;
-      overflow: hidden;
-    }
-    .guide-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(34,197,94,.45); }
-    .guide-btn:active { transform: translateY(1px); box-shadow: 0 3px 10px rgba(34,197,94,.3); }
-    .guide-btn:disabled { background: #94a3b8; box-shadow: none; cursor: not-allowed; transform: none; }
-    .btn-icon { font-size: 1.6rem; }
-
-    /* ripple */
-    .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255,255,255,.35);
-      width: 10px; height: 10px;
-      animation: ripple-anim .6s ease-out forwards;
-      pointer-events: none;
-    }
-    @keyframes ripple-anim {
-      to { transform: scale(30); opacity: 0; }
-    }
-
-    /* loading */
-    .loading-row {
-      display: none;
-      align-items: center;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 16px;
-      color: var(--sky-dark);
-      font-weight: 700;
-      font-size: .9rem;
-    }
+    .loading-row { display: none; align-items: center; gap: 10px; justify-content: center; color: #c8a96e; font-weight: 700; font-size: .88rem; font-style: italic; }
     .loading-row.visible { display: flex; }
-    .dots span {
-      display: inline-block;
-      width: 7px; height: 7px;
-      background: var(--sky);
-      border-radius: 50%;
-      margin: 0 2px;
-      animation: bounce .9s ease-in-out infinite;
-    }
+    .dots span { display: inline-block; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; margin: 0 2px; animation: bounce .9s ease-in-out infinite; }
     .dots span:nth-child(2) { animation-delay: .15s; }
     .dots span:nth-child(3) { animation-delay: .3s; }
-    @keyframes bounce {
-      0%,80%,100% { transform: translateY(0); }
-      40% { transform: translateY(-8px); }
-    }
+    @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-7px); } }
 
-    /* response bubble */
-    .bubble {
-      display: none;
-      background: var(--bubble);
-      border: 2px solid #bbf7d0;
-      border-radius: 16px;
-      padding: 18px;
-      margin-top: 16px;
-      position: relative;
-      animation: pop-in .35s cubic-bezier(.34,1.56,.64,1) forwards;
-    }
-    .bubble.visible { display: block; }
-    @keyframes pop-in {
-      from { transform: scale(.88); opacity: 0; }
-      to   { transform: scale(1);   opacity: 1; }
-    }
-    .bubble-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .guide-avatar {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--sky), var(--sky-dark));
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem;
-      flex-shrink: 0;
-    }
-    .guide-name { font-weight: 800; color: var(--sky-dark); font-size: .9rem; }
-    .bubble-text {
-      font-size: .95rem;
-      line-height: 1.65;
-      color: var(--text);
-      white-space: pre-wrap;
-    }
+    .story-card { display: none; background: var(--parchment); border: 2px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.25); animation: pop-in .4s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .story-card.visible { display: block; }
+    @keyframes pop-in { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .story-header { background: linear-gradient(135deg, #1a0a02, #3d1f08); padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+    .story-avatar { width: 40px; height: 40px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+    .story-meta { flex: 1; }
+    .story-guide-name { font-family: 'Playfair Display', serif; font-size: .95rem; color: var(--gold); font-weight: 700; }
+    .story-site-name { font-size: .75rem; color: #c8a96e; font-weight: 600; margin-top: 2px; }
+    .story-badges { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+    .story-dist { font-size: .7rem; background: rgba(212,172,13,.2); border: 1px solid rgba(212,172,13,.4); color: var(--gold); padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+    .story-period { font-size: .68rem; background: rgba(192,57,43,.2); border: 1px solid rgba(192,57,43,.4); color: #e8917e; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+    .story-body { padding: 18px 18px 10px; }
+    .story-text { font-size: .95rem; line-height: 1.75; color: var(--ink); font-style: italic; }
+    .story-footer { display: flex; gap: 8px; padding: 10px 16px 14px; justify-content: flex-end; }
+    .tts-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: white; color: var(--blue); font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .8rem; cursor: pointer; transition: background .15s; }
+    .tts-btn:hover { background: #eaf4fb; }
+    .tts-btn.speaking { background: #eaf4fb; border-color: var(--blue); }
 
-    /* TTS controls */
-    .tts-row {
-      display: none;
-      gap: 8px;
-      margin-top: 12px;
-      justify-content: flex-end;
-    }
-    .tts-row.visible { display: flex; }
-    .tts-btn {
-      display: flex; align-items: center; gap: 5px;
-      padding: 7px 14px;
-      border: 2px solid #bbf7d0;
-      border-radius: 10px;
-      background: white;
-      color: var(--sky-dark);
-      font-family: 'Nunito', sans-serif;
-      font-weight: 700;
-      font-size: .82rem;
-      cursor: pointer;
-      transition: background .15s, border-color .15s;
-    }
-    .tts-btn:hover { background: #e0f2fe; border-color: var(--sky); }
-    .tts-btn.speaking { background: #e0f2fe; border-color: var(--sky); }
-
-    /* error */
-    .error-msg {
-      display: none;
-      background: #fff1f2;
-      border: 2px solid #fecdd3;
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-top: 14px;
-      font-size: .88rem;
-      color: #be123c;
-      font-weight: 600;
-    }
+    .error-msg { display: none; background: #fdf2f2; border: 2px solid #f5c6c6; border-radius: 12px; padding: 12px 16px; font-size: .85rem; color: var(--red); font-weight: 600; }
     .error-msg.visible { display: block; }
-
-    /* footer */
-    .footer {
-      margin-top: 16px;
-      text-align: center;
-      font-size: .75rem;
-      color: var(--text-light);
-      font-weight: 600;
-    }
-
-    /* direction indicator */
-    .dir-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #eff6ff;
-      border: 1.5px solid #bfdbfe;
-      border-radius: 8px;
-      padding: 4px 10px;
-      font-size: .78rem;
-      font-weight: 700;
-      color: #1d4ed8;
-      margin-top: 8px;
-    }
-
-    /* ——— API Key section ——— */
-    .apikey-section {
-      margin-top: 18px;
-      border: 2px dashed #e2e8f0;
-      border-radius: 14px;
-      padding: 14px 16px;
-      background: #f8fafc;
-      transition: border-color .2s;
-    }
-    .apikey-section.saved {
-      border-color: #bbf7d0;
-      background: #f0fdf4;
-    }
-    .apikey-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      user-select: none;
-    }
-    .apikey-label {
-      font-size: .82rem;
-      font-weight: 800;
-      color: var(--text-light);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .apikey-status {
-      font-size: .75rem;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 20px;
-      background: #fef3c7;
-      color: #92400e;
-    }
-    .apikey-status.ok {
-      background: #dcfce7;
-      color: #166534;
-    }
-    .apikey-body {
-      display: none;
-      margin-top: 12px;
-      gap: 8px;
-      flex-direction: column;
-    }
-    .apikey-body.open { display: flex; }
-    .apikey-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 10px;
-      font-family: 'Nunito', monospace;
-      font-size: .82rem;
-      font-weight: 600;
-      color: var(--text);
-      background: white;
-      outline: none;
-      transition: border-color .2s;
-    }
-    .apikey-input:focus { border-color: var(--sky); }
-    .apikey-actions { display: flex; gap: 8px; }
-    .apikey-save {
-      flex: 1;
-      padding: 9px;
-      border: none;
-      border-radius: 10px;
-      background: var(--sky);
-      color: white;
-      font-family: 'Nunito', sans-serif;
-      font-weight: 800;
-      font-size: .85rem;
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .apikey-save:hover { background: var(--sky-dark); }
-    .apikey-clear {
-      padding: 9px 14px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      background: white;
-      color: #ef4444;
-      font-family: 'Nunito', sans-serif;
-      font-weight: 700;
-      font-size: .82rem;
-      cursor: pointer;
-    }
-    .apikey-hint {
-      font-size: .75rem;
-      color: var(--text-light);
-      font-weight: 600;
-    }
-    .apikey-hint a { color: var(--sky-dark); }
-
+    .footer { text-align: center; font-size: .7rem; color: #8b5e3c; font-weight: 600; letter-spacing: 1px; }
   </style>
 </head>
 <body>
 
-<!-- SKY SCENE -->
-<div class="scene">
-  <div class="sun"></div>
-  <div class="cloud cloud-1"></div>
-  <div class="cloud cloud-2"></div>
-  <div class="cloud cloud-3"></div>
+<div class="header">
+  <div class="app-title">🏛 Guide IA</div>
+  <div class="app-sub">Votre guide historique de poche</div>
   <div class="compass-wrap">
     <div class="compass"><div class="needle" id="needle"></div></div>
-    <span class="compass-label" id="compass-label">CAP ?</span>
+    <span class="compass-label" id="compass-label">CAP</span>
   </div>
 </div>
 
-<!-- MAIN CARD -->
-<div class="card">
-  <div class="app-title">🌍 Guide IA</div>
-  <div class="app-sub">Ton guide historique de poche !</div>
+<div class="container">
 
-  <div class="loc-bar">
-    <span class="loc-icon" id="loc-icon">📍</span>
-    <span class="loc-text" id="loc-text">Recherche ta position…</span>
-    <span class="loc-coords" id="loc-coords"></span>
+  <div class="card">
+    <div class="loc-bar">
+      <span style="font-size:1.2rem">📍</span>
+      <div class="loc-info">
+        <div class="loc-text" id="loc-text">Localisation en cours…</div>
+        <div class="loc-coords" id="loc-coords"></div>
+      </div>
+      <div class="dir-badge" id="dir-badge">🧭 <span id="dir-label">?</span></div>
+    </div>
   </div>
-  <div id="dir-badge-wrap"></div>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot dot-me"></div>Vous êtes ici</div>
+      <div class="legend-item"><div class="legend-dot dot-site"></div>Site historique</div>
+    </div>
+  </div>
 
   <div class="apikey-section" id="apiKeySection">
     <div class="apikey-header" onclick="toggleApiPanel()">
@@ -447,8 +138,7 @@
       <span class="apikey-status" id="apiKeyStatus">Non configurée</span>
     </div>
     <div class="apikey-body" id="apiKeyBody">
-      <input class="apikey-input" id="apiKeyInput" type="password"
-        placeholder="sk-or-v1-…" autocomplete="off" spellcheck="false" />
+      <input class="apikey-input" id="apiKeyInput" type="password" placeholder="sk-or-v1-…" autocomplete="off" spellcheck="false" />
       <div class="apikey-actions">
         <button class="apikey-save" onclick="saveApiKey()">💾 Sauvegarder</button>
         <button class="apikey-clear" onclick="clearApiKey()">🗑</button>
@@ -457,295 +147,305 @@
     </div>
   </div>
 
-
   <button class="guide-btn" id="guideBtn" disabled>
-    <span class="btn-icon">🧭</span> Guide-moi !
+    <span style="font-size:1.4rem">🏛</span> Guide-moi !
   </button>
 
   <div class="loading-row" id="loadingRow">
-    <span>Ton guide réfléchit</span>
+    <span>Le guide consulte ses archives</span>
     <div class="dots"><span></span><span></span><span></span></div>
   </div>
 
-  <div class="bubble" id="bubble">
-    <div class="bubble-header">
-      <div class="guide-avatar">🤖</div>
-      <div>
-        <div class="guide-name">Guide IA</div>
+  <div class="story-card" id="storyCard">
+    <div class="story-header">
+      <div class="story-avatar">🎩</div>
+      <div class="story-meta">
+        <div class="story-guide-name">Votre Guide</div>
+        <div class="story-site-name" id="storySiteName">—</div>
+      </div>
+      <div class="story-badges">
+        <div class="story-dist" id="storyDist"></div>
+        <div class="story-period" id="storyPeriod"></div>
       </div>
     </div>
-    <div class="bubble-text" id="bubbleText"></div>
-    <div class="tts-row" id="ttsRow">
+    <div class="story-body">
+      <div class="story-text" id="storyText"></div>
+    </div>
+    <div class="story-footer">
       <button class="tts-btn" id="ttsBtn" onclick="toggleSpeak()">🔊 Écouter</button>
       <button class="tts-btn" onclick="stopSpeak()">⏹ Stop</button>
     </div>
   </div>
 
   <div class="error-msg" id="errorMsg"></div>
-
-  <div class="footer">v0.0.5 · OpenRouter · GPS</div>
+  <div class="footer">v0.0.6 · OpenRouter · Leaflet · GPS</div>
 </div>
 
 <script>
-// ———————————————————————————————
-// STATE
-// ———————————————————————————————
-let userLat = null, userLon = null;
-let heading = null;
-let callCount = 0;
-let currentUtterance = null;
+let userLat = null, userLon = null, heading = null;
+let callCount = 0, currentUtterance = null;
+const seenPlaces = new Set();
+let map, markerMe, markerSite, lineSite;
 
-// ———————————————————————————————
-// GEOLOCATION
-// ———————————————————————————————
+// MAP
+function initMap() {
+  map = L.map('map', { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  map.setView([46.5, 2.5], 5);
+}
+
+function makeIcon(emoji, color) {
+  return L.divIcon({
+    html: '<div style="background:' + color + ';width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:.95rem;">' + emoji + '</div>',
+    className: '', iconSize: [32,32], iconAnchor: [16,16], popupAnchor: [0,-20]
+  });
+}
+
+function updateMyMarker() {
+  if (!map || userLat === null) return;
+  const pos = [userLat, userLon];
+  if (!markerMe) {
+    markerMe = L.marker(pos, { icon: makeIcon('🔵','#1a5276'), zIndexOffset: 1000 }).addTo(map).bindPopup('<b>Vous êtes ici</b>');
+    map.setView(pos, 15);
+  } else { markerMe.setLatLng(pos); }
+}
+
+function showSiteOnMap(lat, lon, name) {
+  if (!map) return;
+  if (markerSite) { map.removeLayer(markerSite); markerSite = null; }
+  if (lineSite)   { map.removeLayer(lineSite);   lineSite = null; }
+  markerSite = L.marker([lat,lon], { icon: makeIcon('🔴','#c0392b') }).addTo(map).bindPopup('<b>' + name + '</b>').openPopup();
+  if (userLat !== null) {
+    lineSite = L.polyline([[userLat,userLon],[lat,lon]], { color:'#c0392b', weight:2.5, dashArray:'7,9', opacity:.65 }).addTo(map);
+    map.fitBounds([[userLat,userLon],[lat,lon]], { padding:[44,44] });
+  } else { map.setView([lat,lon], 15); }
+}
+
+// GEO
 function initGeo() {
-  if (!navigator.geolocation) {
-    setLocText('⚠️ GPS non disponible', '');
-    return;
-  }
+  if (!navigator.geolocation) { setLocText('GPS non disponible',''); refreshGuideBtn(); return; }
   navigator.geolocation.watchPosition(
-    pos => {
-      userLat = pos.coords.latitude;
-      userLon = pos.coords.longitude;
+    function(pos) {
+      userLat = pos.coords.latitude; userLon = pos.coords.longitude;
       if (pos.coords.heading != null) heading = pos.coords.heading;
-      setLocText('Position trouvée ✅',
-        `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`);
-      refreshGuideBtn();
-      updateCompass(heading);
-      updateDirBadge(heading);
+      setLocText('📍 Position trouvée', userLat.toFixed(4) + ', ' + userLon.toFixed(4));
+      updateMyMarker(); updateCompass(heading); updateDirBadge(heading); refreshGuideBtn();
     },
-    err => {
-      setLocText('GPS indisponible — position approx.', '');
-      // Still allow button with no GPS (will use IP-based guess by AI)
-      refreshGuideBtn();
-    },
+    function() { setLocText('GPS indisponible',''); refreshGuideBtn(); },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
 }
+function setLocText(t,c) { document.getElementById('loc-text').textContent = t; document.getElementById('loc-coords').textContent = c; }
 
-function setLocText(txt, coords) {
-  document.getElementById('loc-text').textContent = txt;
-  document.getElementById('loc-coords').textContent = coords;
-}
-
-// ———————————————————————————————
 // COMPASS
-// ———————————————————————————————
-function updateCompass(deg) {
-  const needle = document.getElementById('needle');
-  const label  = document.getElementById('compass-label');
-  if (deg == null) return;
-  needle.style.transform = `rotate(${deg}deg)`;
-  label.textContent = headingLabel(deg);
+function headingLabel(d) {
+  if (d == null) return '?';
+  return ['N','NE','E','SE','S','SO','O','NO'][Math.round(d/45)%8];
+}
+function updateCompass(d) {
+  if (d == null) return;
+  document.getElementById('needle').style.transform = 'rotate('+d+'deg)';
+  document.getElementById('compass-label').textContent = headingLabel(d);
+}
+function updateDirBadge(d) {
+  var b = document.getElementById('dir-badge');
+  if (d == null) { b.style.display='none'; return; }
+  b.style.display='inline-flex';
+  document.getElementById('dir-label').textContent = headingLabel(d)+' '+Math.round(d)+'°';
 }
 
-function headingLabel(deg) {
-  if (deg == null) return 'CAP ?';
-  const dirs = ['N','NE','E','SE','S','SO','O','NO'];
-  return dirs[Math.round(deg / 45) % 8];
-}
-
-function updateDirBadge(deg) {
-  const wrap = document.getElementById('dir-badge-wrap');
-  if (deg == null) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = `<div class="dir-badge">🧭 Direction : ${headingLabel(deg)} (${Math.round(deg)}°)</div>`;
-}
-
-// Device orientation for compass
 if (window.DeviceOrientationEvent) {
-  const handler = e => {
-    let h = e.alpha; // compass heading if available
-    if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;
-    if (h != null) {
-      heading = h;
-      updateCompass(h);
-      updateDirBadge(h);
-    }
+  var orientHandler = function(e) {
+    var h = e.webkitCompassHeading != null ? e.webkitCompassHeading : e.alpha;
+    if (h != null) { heading = h; updateCompass(h); updateDirBadge(h); }
   };
   if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+ — request on user gesture
-    document.getElementById('guideBtn').addEventListener('click', () => {
-      DeviceOrientationEvent.requestPermission().then(s => {
-        if (s === 'granted') window.addEventListener('deviceorientation', handler);
-      }).catch(() => {});
+    document.getElementById('guideBtn').addEventListener('click', function() {
+      DeviceOrientationEvent.requestPermission().then(function(s) {
+        if (s==='granted') window.addEventListener('deviceorientation', orientHandler);
+      }).catch(function(){});
     }, { once: true });
-  } else {
-    window.addEventListener('deviceorientation', handler);
-  }
+  } else { window.addEventListener('deviceorientation', orientHandler); }
 }
 
-// ———————————————————————————————
-// API KEY MANAGEMENT (localStorage)
-// ———————————————————————————————
-const LS_KEY = 'guideIA_openrouter_key';
-// Models tried in order — free tier with fallbacks
-// openrouter/free = routeur officiel qui choisit automatiquement un modèle gratuit dispo
-const MODELS = [
-  "openrouter/free",
-];
-
-function getApiKey() {
-  return localStorage.getItem(LS_KEY) || '';
-}
-
+// API KEY
+var LS_KEY = 'guideIA_openrouter_key';
+function getApiKey() { return localStorage.getItem(LS_KEY) || ''; }
 function saveApiKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  if (!val) { alert('Entre une clé valide !'); return; }
-  localStorage.setItem(LS_KEY, val);
+  var v = document.getElementById('apiKeyInput').value.trim();
+  if (!v) { alert('Entre une clé valide !'); return; }
+  localStorage.setItem(LS_KEY, v);
   updateApiKeyUI(true);
   document.getElementById('apiKeyBody').classList.remove('open');
-  // enable guide button if GPS already ready
   refreshGuideBtn();
 }
-
 function clearApiKey() {
   localStorage.removeItem(LS_KEY);
   document.getElementById('apiKeyInput').value = '';
-  updateApiKeyUI(false);
-  refreshGuideBtn();
+  updateApiKeyUI(false); refreshGuideBtn();
 }
-
 function toggleApiPanel() {
-  const body = document.getElementById('apiKeyBody');
-  body.classList.toggle('open');
-  // pre-fill input with masked key if saved
-  if (body.classList.contains('open')) {
-    const k = getApiKey();
-    document.getElementById('apiKeyInput').value = k;
-    document.getElementById('apiKeyInput').focus();
-  }
+  var b = document.getElementById('apiKeyBody');
+  b.classList.toggle('open');
+  if (b.classList.contains('open')) { document.getElementById('apiKeyInput').value = getApiKey(); document.getElementById('apiKeyInput').focus(); }
 }
-
-function updateApiKeyUI(hasSaved) {
-  const section = document.getElementById('apiKeySection');
-  const status  = document.getElementById('apiKeyStatus');
-  if (hasSaved) {
-    section.classList.add('saved');
-    status.classList.add('ok');
-    status.textContent = '✓ Configurée';
-  } else {
-    section.classList.remove('saved');
-    status.classList.remove('ok');
-    status.textContent = 'Non configurée';
-  }
+function updateApiKeyUI(has) {
+  document.getElementById('apiKeySection').classList.toggle('saved', has);
+  var s = document.getElementById('apiKeyStatus');
+  s.classList.toggle('ok', has);
+  s.textContent = has ? '✓ Configurée' : 'Non configurée';
 }
-
-function refreshGuideBtn() {
-  const hasKey = !!getApiKey();
-  const hasGps = (userLat !== null) || true; // allow even without GPS
-  document.getElementById('guideBtn').disabled = !hasKey;
-}
-
-// Init API key UI on load
-(function initApiKeyUI() {
-  const k = getApiKey();
-  if (k) updateApiKeyUI(true);
-  else {
-    updateApiKeyUI(false);
-    // auto-open panel so user sees it right away
-    document.getElementById('apiKeyBody').classList.add('open');
-  }
+function refreshGuideBtn() { document.getElementById('guideBtn').disabled = !getApiKey(); }
+(function() {
+  if (getApiKey()) updateApiKeyUI(true);
+  else { updateApiKeyUI(false); document.getElementById('apiKeyBody').classList.add('open'); }
+  refreshGuideBtn();
 })();
 
-// ———————————————————————————————
-// OPENROUTER API
-// ———————————————————————————————
-
-async function fetchGuide() {
+// FETCH
+async function callAI(userPrompt, sysPrompt) {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error("Configure d\'abord ta clé OpenRouter 🔑");
-  callCount++;
-
-  const locPart = (userLat && userLon)
-    ? `Mes coordonnées GPS exactes sont : latitude ${userLat.toFixed(5)}, longitude ${userLon.toFixed(5)}.`
-    : `Je n'ai pas de GPS précis, mais tu peux deviner une zone géographique probable.`;
-
-  const dirPart = (heading != null)
-    ? `Je me déplace vers le ${headingLabel(heading)} (${Math.round(heading)}°).`
-    : `Je ne connais pas encore ma direction.`;
-
-  const prompt = `Tu es un guide touristique IA passionné et amusant, qui parle à des enfants de 8 à 12 ans.
-${locPart}
-${dirPart}
-
-Donne-moi UN seul fait historique ou anecdote fascinante sur un lieu, monument, événement ou curiosité géographique très proche de ma position actuelle.
-- Commence par indiquer la direction (ex : "À ta droite…", "Devant toi…", "Derrière toi…") et la distance approximative.
-- Utilise un langage simple, imagé et enthousiaste.
-- Ajoute une comparaison amusante ou une info surprenante pour les enfants.
-- Maximum 4 phrases.
-- Ne répète pas les anecdotes déjà données (appel n°${callCount}).
-- Réponds uniquement en français.`;
-
-  let lastError = "Aucun modèle disponible";
-  for (const model of MODELS) {
-    try {
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${getApiKey()}`,
-          "HTTP-Referer": window.location.href,
-          "X-Title": "Guide IA"
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 300,
-          temperature: 0.9
-        })
-      });
-      if (res.status === 401 || res.status === 403) {
-        throw new Error("Clé API invalide (" + res.status + "). Vérifie ta clé sur openrouter.ai");
-      }
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        lastError = err?.error?.message || "HTTP " + res.status;
-        console.warn("Modèle échoué:", model, lastError);
-        continue;
-      }
-      const data = await res.json();
-      const txt = data.choices?.[0]?.message?.content?.trim();
-      if (!txt) { lastError = "Réponse vide"; continue; }
-      console.log("Modèle utilisé:", model);
-      return txt;
-    } catch(e) {
-      if (e.message.includes("Clé API")) throw e;
-      lastError = e.message;
-      console.warn("Exception modèle:", model, e.message);
-    }
+  const msgs = [];
+  if (sysPrompt) msgs.push({ role: "system", content: sysPrompt });
+  msgs.push({ role: "user", content: userPrompt });
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + apiKey,
+      "HTTP-Referer": window.location.href,
+      "X-Title": "Guide IA"
+    },
+    body: JSON.stringify({ model: "openrouter/free", messages: msgs, max_tokens: 600, temperature: 0.8 })
+  });
+  if (res.status === 401 || res.status === 403) throw new Error("Clé API invalide. Vérifie sur openrouter.ai");
+  if (!res.ok) {
+    const e = await res.json().catch(()=>({}));
+    throw new Error((e && e.error && e.error.message) || "Erreur HTTP " + res.status);
   }
-  throw new Error("Tous les modèles ont échoué : " + lastError);
+  const data = await res.json();
+  return ((data.choices || [])[0] || {}).message && data.choices[0].message.content
+    ? data.choices[0].message.content.trim() : "";
 }
 
-// ———————————————————————————————
+async function nominatimSearch(query, lat, lon) {
+  const bbox = (lon-0.05)+","+(lat+0.05)+","+(lon+0.05)+","+(lat-0.05);
+  const url = "https://nominatim.openstreetmap.org/search?q="
+    + encodeURIComponent(query)
+    + "&format=json&limit=5&bounded=0&viewbox=" + bbox;
+  const res = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "GuideIA/1.0" } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.length) return null;
+  data.sort((a,b) => {
+    const da = Math.hypot(parseFloat(a.lat)-lat, parseFloat(a.lon)-lon);
+    const db = Math.hypot(parseFloat(b.lat)-lat, parseFloat(b.lon)-lon);
+    return da - db;
+  });
+  return data[0];
+}
+
+async function overpassNearby(lat, lon, radius) {
+  const query = "[out:json][timeout:12];(node[\"historic\"](around:"+radius+","+lat+","+lon+");way[\"historic\"](around:"+radius+","+lat+","+lon+");node[\"tourism\"=\"museum\"](around:"+radius+","+lat+","+lon+");way[\"tourism\"=\"museum\"](around:"+radius+","+lat+","+lon+"););out center 30;";
+  const res = await fetch("https://overpass-api.de/api/interpreter", { method:"POST", body:query });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.elements||[]).map(el => {
+    const elLat = el.lat || (el.center && el.center.lat);
+    const elLon = el.lon || (el.center && el.center.lon);
+    const name = el.tags && (el.tags.name || el.tags["name:fr"]);
+    if (!name || !elLat || !elLon) return null;
+    return {
+      name,
+      lat: parseFloat(elLat),
+      lon: parseFloat(elLon),
+      dist: Math.round(Math.hypot(parseFloat(elLat)-lat, parseFloat(elLon)-lon) * 111320)
+    };
+  }).filter(Boolean).sort((a,b) => a.dist - b.dist);
+}
+
+async function fetchGuide() {
+  if (!getApiKey()) throw new Error("Configure d'abord ta cle OpenRouter");
+  callCount++;
+
+  const hasGps = userLat !== null && userLon !== null;
+  const lat0 = hasGps ? userLat : 48.8534;
+  const lon0 = hasGps ? userLon : 2.3488;
+  const dirPart = heading != null ? " Je marche cap " + headingLabel(heading) + "." : "";
+
+  // ETAPE 1 : vrais lieux OSM via Overpass
+  let lieu, lat, lon, dist_m = 0;
+  let candidates = [];
+  try { candidates = await overpassNearby(lat0, lon0, 500); }
+  catch(e) { console.warn("Overpass:", e); }
+
+  if (candidates.length > 0) {
+    const fresh = candidates.filter(c => !seenPlaces.has(c.name));
+    const pool  = fresh.length > 0 ? fresh : candidates;
+    const pick  = pool[Math.floor(Math.random() * Math.min(5, pool.length))];
+    lieu   = pick.name;
+    lat    = pick.lat;
+    lon    = pick.lon;
+    dist_m = pick.dist;
+    seenPlaces.add(lieu);
+    console.log("OSM:", lieu, lat, lon, dist_m+"m");
+  } else {
+    // Fallback: IA donne un nom, Nominatim geocode
+    const nameRaw = await callAI(
+      "Cite UNIQUEMENT le nom d'un monument ou lieu historique reel situe pres de lat="
+      + lat0.toFixed(5) + " lon=" + lon0.toFixed(5)
+      + ". Reponds avec seulement le nom, rien d'autre. Appel n." + callCount + "."
+    );
+    lieu = nameRaw.trim().replace(/^["']+|["'.]+$/g, "").split("\n")[0];
+    const osm = await nominatimSearch(lieu, lat0, lon0);
+    lat  = osm ? parseFloat(osm.lat) : lat0;
+    lon  = osm ? parseFloat(osm.lon) : lon0;
+    dist_m = Math.round(Math.hypot(lat-lat0, lon-lon0)*111320);
+    seenPlaces.add(lieu);
+    console.log("Nominatim:", lieu, lat, lon);
+  }
+
+  // ETAPE 2 : narration IA sur ce lieu precis avec coords reelles
+  const prompt =
+    "Tu es un guide historique passionne sur place.\n" +
+    "Le visiteur est a lat=" + lat0.toFixed(5) + " lon=" + lon0.toFixed(5) + "." + dirPart + "\n" +
+    "Parle-lui maintenant de : \"" + lieu + "\" (a environ " + dist_m + " m de lui).\n" +
+    "Commence par une phrase indiquant la direction et la distance. Puis raconte l'histoire en 4-5 phrases vivantes en francais.";
+
+  const recit = await callAI(prompt);
+  if (!recit) throw new Error("Reponse vide.");
+
+  return { lieu, recit, lat, lon };
+}
+
 // BUTTON
-// ———————————————————————————————
 document.getElementById('guideBtn').addEventListener('click', async function(e) {
-  // ripple
-  const rect = this.getBoundingClientRect();
-  const r = document.createElement('span');
+  var rect = this.getBoundingClientRect();
+  var r = document.createElement('span');
   r.className = 'ripple';
   r.style.left = (e.clientX - rect.left - 5) + 'px';
   r.style.top  = (e.clientY - rect.top  - 5) + 'px';
   this.appendChild(r);
-  setTimeout(() => r.remove(), 700);
+  setTimeout(function(){r.remove();}, 700);
 
-  // reset UI
   stopSpeak();
-  document.getElementById('bubble').classList.remove('visible');
+  document.getElementById('storyCard').classList.remove('visible');
   document.getElementById('errorMsg').classList.remove('visible');
   document.getElementById('loadingRow').classList.add('visible');
   this.disabled = true;
 
   try {
-    const text = await fetchGuide();
-    document.getElementById('bubbleText').textContent = text;
-    document.getElementById('bubble').classList.add('visible');
-    document.getElementById('ttsRow').classList.add('visible');
-    autoSpeak(text);
+    var d = await fetchGuide();
+    document.getElementById('storySiteName').textContent = d.lieu || '—';
+    document.getElementById('storyDist').textContent = '';
+    document.getElementById('storyPeriod').textContent = '';
+    document.getElementById('storyText').textContent = d.recit || '—';
+    document.getElementById('storyCard').classList.add('visible');
+    if (d.lat && d.lon) showSiteOnMap(d.lat, d.lon, d.lieu || 'Site historique');
+    autoSpeak(d.recit || '');
   } catch(err) {
-    const msg = document.getElementById('errorMsg');
-    msg.textContent = `😕 Oups ! ${err.message}`;
+    var msg = document.getElementById('errorMsg');
+    msg.textContent = '😕 ' + err.message;
     msg.classList.add('visible');
   } finally {
     document.getElementById('loadingRow').classList.remove('visible');
@@ -753,42 +453,22 @@ document.getElementById('guideBtn').addEventListener('click', async function(e) 
   }
 });
 
-// ———————————————————————————————
-// TEXT-TO-SPEECH
-// ———————————————————————————————
+// TTS
 function autoSpeak(text) {
-  if (!window.speechSynthesis) return;
+  if (!window.speechSynthesis || !text) return;
   stopSpeak();
   currentUtterance = new SpeechSynthesisUtterance(text);
   currentUtterance.lang = 'fr-FR';
-  currentUtterance.rate = 0.92;
-  currentUtterance.pitch = 1.05;
-  currentUtterance.onstart = () => {
-    document.getElementById('ttsBtn').classList.add('speaking');
-    document.getElementById('ttsBtn').textContent = '🔊 Lecture…';
-  };
-  currentUtterance.onend = currentUtterance.onerror = () => {
-    document.getElementById('ttsBtn').classList.remove('speaking');
-    document.getElementById('ttsBtn').textContent = '🔊 Écouter';
-  };
+  currentUtterance.rate = 0.88;
+  currentUtterance.onstart = function() { document.getElementById('ttsBtn').classList.add('speaking'); document.getElementById('ttsBtn').textContent = '🔊 Lecture…'; };
+  currentUtterance.onend = currentUtterance.onerror = function() { document.getElementById('ttsBtn').classList.remove('speaking'); document.getElementById('ttsBtn').textContent = '🔊 Écouter'; };
   speechSynthesis.speak(currentUtterance);
 }
+function toggleSpeak() { if (speechSynthesis.speaking) { stopSpeak(); return; } autoSpeak(document.getElementById('storyText').textContent); }
+function stopSpeak() { if (window.speechSynthesis) speechSynthesis.cancel(); var b = document.getElementById('ttsBtn'); if (b) { b.classList.remove('speaking'); b.textContent = '🔊 Écouter'; } }
 
-function toggleSpeak() {
-  const text = document.getElementById('bubbleText').textContent;
-  if (speechSynthesis.speaking) { stopSpeak(); return; }
-  autoSpeak(text);
-}
-
-function stopSpeak() {
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  const btn = document.getElementById('ttsBtn');
-  if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊 Écouter'; }
-}
-
-// ———————————————————————————————
 // INIT
-// ———————————————————————————————
+initMap();
 initGeo();
 </script>
 </body>
