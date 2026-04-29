@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guide IA — Explore le monde !</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sky: #0ea5e9;
+      --sky-dark: #0369a1;
+      --sun: #fbbf24;
+      --grass: #22c55e;
+      --ground: #14532d;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --accent: #f97316;
+      --bubble: #f0fdf4;
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 40%, #d1fae5 70%, #bbf7d0 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 40px;
+      overflow-x: hidden;
+    }
+
+    /* ——— Sky scene ——— */
+    .scene {
+      width: 100%;
+      height: 180px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cloud {
+      position: absolute;
+      background: white;
+      border-radius: 50px;
+      opacity: 0.85;
+    }
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+    }
+    .cloud-1 { width: 100px; height: 32px; top: 30px; left: -120px; animation: drift 18s linear infinite; }
+    .cloud-1::before { width: 50px; height: 50px; top: -22px; left: 10px; }
+    .cloud-1::after  { width: 36px; height: 36px; top: -14px; left: 40px; }
+    .cloud-2 { width: 140px; height: 38px; top: 60px; left: -160px; animation: drift 26s linear infinite 6s; opacity: 0.65; }
+    .cloud-2::before { width: 60px; height: 60px; top: -28px; left: 18px; }
+    .cloud-2::after  { width: 44px; height: 44px; top: -18px; left: 60px; }
+    .cloud-3 { width: 80px; height: 24px; top: 20px; left: -100px; animation: drift 22s linear infinite 12s; opacity: 0.55; }
+    .cloud-3::before { width: 38px; height: 38px; top: -18px; left: 8px; }
+    .cloud-3::after  { width: 28px; height: 28px; top: -10px; left: 32px; }
+
+    @keyframes drift {
+      from { transform: translateX(0); }
+      to   { transform: translateX(calc(100vw + 200px)); }
+    }
+
+    .sun {
+      position: absolute;
+      top: 18px; right: 30px;
+      width: 54px; height: 54px;
+      background: var(--sun);
+      border-radius: 50%;
+      box-shadow: 0 0 0 10px rgba(251,191,36,.25), 0 0 0 22px rgba(251,191,36,.1);
+      animation: pulse-sun 3s ease-in-out infinite;
+    }
+    @keyframes pulse-sun {
+      0%,100% { box-shadow: 0 0 0 10px rgba(251,191,36,.25), 0 0 0 22px rgba(251,191,36,.1); }
+      50%      { box-shadow: 0 0 0 14px rgba(251,191,36,.35), 0 0 0 28px rgba(251,191,36,.15); }
+    }
+
+    /* compass needle */
+    .compass-wrap {
+      position: absolute;
+      bottom: 18px; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .compass {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #cbd5e1;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    .needle {
+      width: 4px; height: 32px;
+      border-radius: 2px;
+      background: linear-gradient(180deg, #ef4444 50%, #94a3b8 50%);
+      transition: transform .4s ease;
+      transform-origin: center center;
+    }
+    .compass-label { font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 1px; }
+
+    /* ——— Main card ——— */
+    .card {
+      width: min(92vw, 440px);
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 28px 24px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+      margin-top: -24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .app-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2rem;
+      color: var(--sky-dark);
+      text-align: center;
+      line-height: 1.1;
+    }
+    .app-sub {
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--text-light);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* location bar */
+    .loc-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-top: 18px;
+    }
+    .loc-icon { font-size: 1.3rem; }
+    .loc-text { font-size: 0.82rem; font-weight: 700; color: var(--text-light); flex: 1; }
+    .loc-coords { font-size: 0.78rem; color: #94a3b8; font-weight: 600; }
+
+    /* big button */
+    .guide-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 20px;
+      padding: 18px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--grass), #16a34a);
+      color: white;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.45rem;
+      letter-spacing: .5px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(34,197,94,.4);
+      transition: transform .15s, box-shadow .15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .guide-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(34,197,94,.45); }
+    .guide-btn:active { transform: translateY(1px); box-shadow: 0 3px 10px rgba(34,197,94,.3); }
+    .guide-btn:disabled { background: #94a3b8; box-shadow: none; cursor: not-allowed; transform: none; }
+    .btn-icon { font-size: 1.6rem; }
+
+    /* ripple */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,.35);
+      width: 10px; height: 10px;
+      animation: ripple-anim .6s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes ripple-anim {
+      to { transform: scale(30); opacity: 0; }
+    }
+
+    /* loading */
+    .loading-row {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+      color: var(--sky-dark);
+      font-weight: 700;
+      font-size: .9rem;
+    }
+    .loading-row.visible { display: flex; }
+    .dots span {
+      display: inline-block;
+      width: 7px; height: 7px;
+      background: var(--sky);
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: bounce .9s ease-in-out infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: .15s; }
+    .dots span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce {
+      0%,80%,100% { transform: translateY(0); }
+      40% { transform: translateY(-8px); }
+    }
+
+    /* response bubble */
+    .bubble {
+      display: none;
+      background: var(--bubble);
+      border: 2px solid #bbf7d0;
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 16px;
+      position: relative;
+      animation: pop-in .35s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .bubble.visible { display: block; }
+    @keyframes pop-in {
+      from { transform: scale(.88); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .bubble-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .guide-avatar {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--sky), var(--sky-dark));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .guide-name { font-weight: 800; color: var(--sky-dark); font-size: .9rem; }
+    .bubble-text {
+      font-size: .95rem;
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* TTS controls */
+    .tts-row {
+      display: none;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: flex-end;
+    }
+    .tts-row.visible { display: flex; }
+    .tts-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 7px 14px;
+      border: 2px solid #bbf7d0;
+      border-radius: 10px;
+      background: white;
+      color: var(--sky-dark);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .tts-btn:hover { background: #e0f2fe; border-color: var(--sky); }
+    .tts-btn.speaking { background: #e0f2fe; border-color: var(--sky); }
+
+    /* error */
+    .error-msg {
+      display: none;
+      background: #fff1f2;
+      border: 2px solid #fecdd3;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: .88rem;
+      color: #be123c;
+      font-weight: 600;
+    }
+    .error-msg.visible { display: block; }
+
+    /* footer */
+    .footer {
+      margin-top: 16px;
+      text-align: center;
+      font-size: .75rem;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+
+    /* direction indicator */
+    .dir-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: .78rem;
+      font-weight: 700;
+      color: #1d4ed8;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- SKY SCENE -->
+<div class="scene">
+  <div class="sun"></div>
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  <div class="cloud cloud-3"></div>
+  <div class="compass-wrap">
+    <div class="compass"><div class="needle" id="needle"></div></div>
+    <span class="compass-label" id="compass-label">CAP ?</span>
+  </div>
+</div>
+
+<!-- MAIN CARD -->
+<div class="card">
+  <div class="app-title">🌍 Guide IA</div>
+  <div class="app-sub">Ton guide historique de poche !</div>
+
+  <div class="loc-bar">
+    <span class="loc-icon" id="loc-icon">📍</span>
+    <span class="loc-text" id="loc-text">Recherche ta position…</span>
+    <span class="loc-coords" id="loc-coords"></span>
+  </div>
+  <div id="dir-badge-wrap"></div>
+
+  <button class="guide-btn" id="guideBtn" disabled>
+    <span class="btn-icon">🧭</span> Guide-moi !
+  </button>
+
+  <div class="loading-row" id="loadingRow">
+    <span>Ton guide réfléchit</span>
+    <div class="dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="bubble" id="bubble">
+    <div class="bubble-header">
+      <div class="guide-avatar">🤖</div>
+      <div>
+        <div class="guide-name">Guide IA</div>
+      </div>
+    </div>
+    <div class="bubble-text" id="bubbleText"></div>
+    <div class="tts-row" id="ttsRow">
+      <button class="tts-btn" id="ttsBtn" onclick="toggleSpeak()">🔊 Écouter</button>
+      <button class="tts-btn" onclick="stopSpeak()">⏹ Stop</button>
+    </div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="footer">v0.0.1 · OpenRouter · GPS</div>
+</div>
+
+<script>
+// ———————————————————————————————
+// STATE
+// ———————————————————————————————
+let userLat = null, userLon = null;
+let heading = null;
+let callCount = 0;
+let currentUtterance = null;
+
+// ———————————————————————————————
+// GEOLOCATION
+// ———————————————————————————————
+function initGeo() {
+  if (!navigator.geolocation) {
+    setLocText('⚠️ GPS non disponible', '');
+    return;
+  }
+  navigator.geolocation.watchPosition(
+    pos => {
+      userLat = pos.coords.latitude;
+      userLon = pos.coords.longitude;
+      if (pos.coords.heading != null) heading = pos.coords.heading;
+      setLocText('Position trouvée ✅',
+        `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`);
+      document.getElementById('guideBtn').disabled = false;
+      updateCompass(heading);
+      updateDirBadge(heading);
+    },
+    err => {
+      setLocText('GPS indisponible — position approx.', '');
+      // Still allow button with no GPS (will use IP-based guess by AI)
+      document.getElementById('guideBtn').disabled = false;
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
+}
+
+function setLocText(txt, coords) {
+  document.getElementById('loc-text').textContent = txt;
+  document.getElementById('loc-coords').textContent = coords;
+}
+
+// ———————————————————————————————
+// COMPASS
+// ———————————————————————————————
+function updateCompass(deg) {
+  const needle = document.getElementById('needle');
+  const label  = document.getElementById('compass-label');
+  if (deg == null) return;
+  needle.style.transform = `rotate(${deg}deg)`;
+  label.textContent = headingLabel(deg);
+}
+
+function headingLabel(deg) {
+  if (deg == null) return 'CAP ?';
+  const dirs = ['N','NE','E','SE','S','SO','O','NO'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function updateDirBadge(deg) {
+  const wrap = document.getElementById('dir-badge-wrap');
+  if (deg == null) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="dir-badge">🧭 Direction : ${headingLabel(deg)} (${Math.round(deg)}°)</div>`;
+}
+
+// Device orientation for compass
+if (window.DeviceOrientationEvent) {
+  const handler = e => {
+    let h = e.alpha; // compass heading if available
+    if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;
+    if (h != null) {
+      heading = h;
+      updateCompass(h);
+      updateDirBadge(h);
+    }
+  };
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ — request on user gesture
+    document.getElementById('guideBtn').addEventListener('click', () => {
+      DeviceOrientationEvent.requestPermission().then(s => {
+        if (s === 'granted') window.addEventListener('deviceorientation', handler);
+      }).catch(() => {});
+    }, { once: true });
+  } else {
+    window.addEventListener('deviceorientation', handler);
+  }
+}
+
+// ———————————————————————————————
+// OPENROUTER API
+// ———————————————————————————————
+const OPENROUTER_API_KEY = "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";
+const MODEL = "mistralai/mistral-7b-instruct:free";
+
+async function fetchGuide() {
+  callCount++;
+
+  const locPart = (userLat && userLon)
+    ? `Mes coordonnées GPS exactes sont : latitude ${userLat.toFixed(5)}, longitude ${userLon.toFixed(5)}.`
+    : `Je n'ai pas de GPS précis, mais tu peux deviner une zone géographique probable.`;
+
+  const dirPart = (heading != null)
+    ? `Je me déplace vers le ${headingLabel(heading)} (${Math.round(heading)}°).`
+    : `Je ne connais pas encore ma direction.`;
+
+  const prompt = `Tu es un guide touristique IA passionné et amusant, qui parle à des enfants de 8 à 12 ans.
+${locPart}
+${dirPart}
+
+Donne-moi UN seul fait historique ou anecdote fascinante sur un lieu, monument, événement ou curiosité géographique très proche de ma position actuelle.
+- Commence par indiquer la direction (ex : "À ta droite…", "Devant toi…", "Derrière toi…") et la distance approximative.
+- Utilise un langage simple, imagé et enthousiaste.
+- Ajoute une comparaison amusante ou une info surprenante pour les enfants.
+- Maximum 4 phrases.
+- Ne répète pas les anecdotes déjà données (appel n°${callCount}).
+- Réponds uniquement en français.`;
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+      "HTTP-Referer": window.location.href,
+      "X-Title": "Guide IA"
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 300,
+      temperature: 0.9
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Erreur HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() || "Aucune réponse reçue.";
+}
+
+// ———————————————————————————————
+// BUTTON
+// ———————————————————————————————
+document.getElementById('guideBtn').addEventListener('click', async function(e) {
+  // ripple
+  const rect = this.getBoundingClientRect();
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  r.style.left = (e.clientX - rect.left - 5) + 'px';
+  r.style.top  = (e.clientY - rect.top  - 5) + 'px';
+  this.appendChild(r);
+  setTimeout(() => r.remove(), 700);
+
+  // reset UI
+  stopSpeak();
+  document.getElementById('bubble').classList.remove('visible');
+  document.getElementById('errorMsg').classList.remove('visible');
+  document.getElementById('loadingRow').classList.add('visible');
+  this.disabled = true;
+
+  try {
+    const text = await fetchGuide();
+    document.getElementById('bubbleText').textContent = text;
+    document.getElementById('bubble').classList.add('visible');
+    document.getElementById('ttsRow').classList.add('visible');
+    autoSpeak(text);
+  } catch(err) {
+    const msg = document.getElementById('errorMsg');
+    msg.textContent = `😕 Oups ! ${err.message}`;
+    msg.classList.add('visible');
+  } finally {
+    document.getElementById('loadingRow').classList.remove('visible');
+    this.disabled = false;
+  }
+});
+
+// ———————————————————————————————
+// TEXT-TO-SPEECH
+// ———————————————————————————————
+function autoSpeak(text) {
+  if (!window.speechSynthesis) return;
+  stopSpeak();
+  currentUtterance = new SpeechSynthesisUtterance(text);
+  currentUtterance.lang = 'fr-FR';
+  currentUtterance.rate = 0.92;
+  currentUtterance.pitch = 1.05;
+  currentUtterance.onstart = () => {
+    document.getElementById('ttsBtn').classList.add('speaking');
+    document.getElementById('ttsBtn').textContent = '🔊 Lecture…';
+  };
+  currentUtterance.onend = currentUtterance.onerror = () => {
+    document.getElementById('ttsBtn').classList.remove('speaking');
+    document.getElementById('ttsBtn').textContent = '🔊 Écouter';
+  };
+  speechSynthesis.speak(currentUtterance);
+}
+
+function toggleSpeak() {
+  const text = document.getElementById('bubbleText').textContent;
+  if (speechSynthesis.speaking) { stopSpeak(); return; }
+  autoSpeak(text);
+}
+
+function stopSpeak() {
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  const btn = document.getElementById('ttsBtn');
+  if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊 Écouter'; }
+}
+
+// ———————————————————————————————
+// INIT
+// ———————————————————————————————
+initGeo();
+</script>
+</body>
+</html>
