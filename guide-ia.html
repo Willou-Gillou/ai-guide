@@ -483,7 +483,7 @@
 
   <div class="error-msg" id="errorMsg"></div>
 
-  <div class="footer">v0.0.2 · OpenRouter · GPS</div>
+  <div class="footer">v0.0.3 · OpenRouter · GPS</div>
 </div>
 
 <script>
@@ -578,7 +578,13 @@ if (window.DeviceOrientationEvent) {
 // API KEY MANAGEMENT (localStorage)
 // ———————————————————————————————
 const LS_KEY = 'guideIA_openrouter_key';
-const MODEL  = "meta-llama/llama-3.2-3b-instruct:free";
+// Models tried in order — free tier with fallbacks
+const MODELS = [
+  "google/gemma-3-4b-it:free",
+  "meta-llama/llama-3.2-3b-instruct:free",
+  "mistralai/mistral-7b-instruct:free",
+  "qwen/qwen-2.5-7b-instruct:free",
+];
 
 function getApiKey() {
   return localStorage.getItem(LS_KEY) || '';
@@ -672,34 +678,45 @@ Donne-moi UN seul fait historique ou anecdote fascinante sur un lieu, monument, 
 - Ne répète pas les anecdotes déjà données (appel n°${callCount}).
 - Réponds uniquement en français.`;
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${getApiKey()}`,
-      "HTTP-Referer": window.location.href,
-      "X-Title": "Guide IA"
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 300,
-      temperature: 0.9
-    })
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const status = res.status;
-    const detail = err?.error?.message || "Erreur HTTP " + status;
-    if (status === 401 || status === 403) {
-      throw new Error("Clé API invalide ou compte introuvable (" + status + "). Vérifie ta clé sur openrouter.ai");
+  let lastError = "Aucun modèle disponible";
+  for (const model of MODELS) {
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${getApiKey()}`,
+          "HTTP-Referer": window.location.href,
+          "X-Title": "Guide IA"
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 300,
+          temperature: 0.9
+        })
+      });
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Clé API invalide (" + res.status + "). Vérifie ta clé sur openrouter.ai");
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        lastError = err?.error?.message || "HTTP " + res.status;
+        console.warn("Modèle échoué:", model, lastError);
+        continue;
+      }
+      const data = await res.json();
+      const txt = data.choices?.[0]?.message?.content?.trim();
+      if (!txt) { lastError = "Réponse vide"; continue; }
+      console.log("Modèle utilisé:", model);
+      return txt;
+    } catch(e) {
+      if (e.message.includes("Clé API")) throw e;
+      lastError = e.message;
+      console.warn("Exception modèle:", model, e.message);
     }
-    throw new Error(detail);
   }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content?.trim() || "Aucune réponse reçue.";
+  throw new Error("Tous les modèles ont échoué : " + lastError);
 }
 
 // ———————————————————————————————
