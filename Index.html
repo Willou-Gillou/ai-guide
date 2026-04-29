@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide IA - Découvrez votre environnement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+
+        header .subtitle {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .api-setup {
+            padding: 20px;
+            background: #fff3cd;
+            border-bottom: 2px solid #ffc107;
+            display: none;
+        }
+
+        .api-setup.show {
+            display: block;
+        }
+
+        .api-setup h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .api-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .api-input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .api-input-group button {
+            padding: 10px 15px;
+            background: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+
+        .api-input-group button:hover {
+            background: #ffb300;
+        }
+
+        .api-status {
+            font-size: 0.85em;
+            color: #856404;
+            margin-top: 10px;
+        }
+
+        .api-status.success {
+            color: #155724;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .info-panel {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .location-info {
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.95em;
+        }
+
+        .info-item .label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .info-item .value {
+            color: #667eea;
+            font-weight: 500;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+        .response-panel {
+            padding: 30px 20px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .response-container {
+            width: 100%;
+        }
+
+        .placeholder {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+        }
+
+        .response-text {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            padding: 20px;
+            border-radius: 12px;
+            line-height: 1.6;
+            color: #333;
+            font-size: 1.05em;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .btn-primary, .btn-danger, .btn-settings {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger:active {
+            transform: translateY(0);
+        }
+
+        .btn-settings {
+            background: #6c757d;
+            color: white;
+            flex: 0.5;
+        }
+
+        .btn-settings:hover {
+            background: #5a6268;
+        }
+
+        .loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: #f8f9fa;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader p {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: center;
+            color: #999;
+            font-size: 0.85em;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .info-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .controls {
+                flex-wrap: wrap;
+            }
+
+            .btn-primary, .btn-danger {
+                flex: 1 1 calc(50% - 5px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ Guide IA</h1>
+            <p class="subtitle">Votre guide touristique personnel</p>
+        </header>
+
+        <section class="api-setup" id="apiSetup">
+            <h3>🔑 Configuration OpenRouter</h3>
+            <div class="api-input-group">
+                <input 
+                    type="password" 
+                    id="apiKeyInput" 
+                    placeholder="Entrez votre clé OpenRouter (sk-or-v1-...)"
+                >
+                <button onclick="saveApiKey()">Sauvegarder</button>
+            </div>
+            <div class="api-status" id="apiStatus">
+                Obtenez votre clé gratuite: <a href="https://openrouter.ai" target="_blank" style="color: inherit;">openrouter.ai</a>
+            </div>
+        </section>
+
+        <section class="info-panel">
+            <div class="location-info">
+                <div class="info-item">
+                    <span class="label">📍 Position:</span>
+                    <span id="latitude" class="value">--</span>°, <span id="longitude" class="value">--</span>°
+                </div>
+                <div class="info-item">
+                    <span class="label">🧭 Direction:</span>
+                    <span id="direction" class="value">--</span>
+                </div>
+            </div>
+            <button id="locationBtn" class="btn-secondary">Obtenir ma position</button>
+        </section>
+
+        <section class="response-panel">
+            <div id="responseContainer" class="response-container">
+                <p class="placeholder">Appuyez sur "Guide-moi" pour découvrir ce qui vous entoure...</p>
+            </div>
+        </section>
+
+        <section class="controls">
+            <button id="guideBtn" class="btn-primary" disabled>
+                🎤 Guide-moi
+            </button>
+            <button id="stopBtn" class="btn-danger" style="display: none;">
+                ⏹️ Arrêter
+            </button>
+            <button class="btn-settings" onclick="toggleApiSetup()">⚙️</button>
+        </section>
+
+        <section class="loader" id="loader" style="display: none;">
+            <div class="spinner"></div>
+            <p>L'IA réfléchit...</p>
+        </section>
+
+        <footer>
+            <p>Version 0.0.1 - Guidé par l'IA</p>
+        </footer>
+    </div>
+
+    <script>
+        // État global
+        let currentLocation = { lat: null, lon: null };
+        let currentDirection = null;
+        let isSpeaking = false;
+        let apiKey = null;
+
+        // Éléments du DOM
+        const guideBtn = document.getElementById('guideBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const locationBtn = document.getElementById('locationBtn');
+        const responseContainer = document.getElementById('responseContainer');
+        const loader = document.getElementById('loader');
+        const latitudeSpan = document.getElementById('latitude');
+        const longitudeSpan = document.getElementById('longitude');
+        const directionSpan = document.getElementById('direction');
+        const apiSetup = document.getElementById('apiSetup');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const apiStatus = document.getElementById('apiStatus');
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            // Charger la clé API depuis sessionStorage
+            apiKey = sessionStorage.getItem('openrouter_api_key');
+            
+            if (apiKey) {
+                updateApiStatus(true);
+                guideBtn.disabled = false;
+            } else {
+                apiSetup.classList.add('show');
+                guideBtn.disabled = true;
+            }
+
+            locationBtn.addEventListener('click', getLocation);
+            guideBtn.addEventListener('click', guideMe);
+            stopBtn.addEventListener('click', stopSpeech);
+            apiKeyInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') saveApiKey();
+            });
+            
+            // Demander la position au chargement
+            getLocation();
+        });
+
+        /**
+         * Basculer le panneau de configuration API
+         */
+        function toggleApiSetup() {
+            apiSetup.classList.toggle('show');
+            if (apiSetup.classList.contains('show')) {
+                apiKeyInput.focus();
+            }
+        }
+
+        /**
+         * Sauvegarder la clé API
+         */
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            
+            if (!key) {
+                apiStatus.textContent = '❌ Veuillez entrer une clé';
+                apiStatus.classList.remove('success');
+                return;
+            }
+
+            if (!key.startsWith('sk-or-v1-')) {
+                apiStatus.textContent = '❌ Format invalide (doit commencer par sk-or-v1-)';
+                apiStatus.classList.remove('success');
+                return;
+            }
+
+            // Sauvegarder dans sessionStorage
+            sessionStorage.setItem('openrouter_api_key', key);
+            apiKey = key;
+
+            updateApiStatus(true);
+            guideBtn.disabled = false;
+            apiSetup.classList.remove('show');
+        }
+
+        /**
+         * Mettre à jour le statut API
+         */
+        function updateApiStatus(success) {
+            if (success) {
+                apiStatus.innerHTML = '✅ Clé API configurée';
+                apiStatus.classList.add('success');
+                apiKeyInput.value = '';
+            } else {
+                apiStatus.innerHTML = '❌ Clé API non configurée';
+                apiStatus.classList.remove('success');
+            }
+        }
+
+        /**
+         * Obtenir la position GPS et l'orientation
+         */
+        function getLocation() {
+            if (!navigator.geolocation) {
+                showError('La géolocalisation n\'est pas disponible sur votre navigateur.');
+                return;
+            }
+
+            locationBtn.disabled = true;
+            locationBtn.textContent = '📍 Localisation...';
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    currentLocation = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+
+                    latitudeSpan.textContent = currentLocation.lat.toFixed(4);
+                    longitudeSpan.textContent = currentLocation.lon.toFixed(4);
+
+                    locationBtn.disabled = false;
+                    locationBtn.textContent = '📍 Position mise à jour';
+
+                    // Essayer d'obtenir l'orientation si disponible
+                    getDeviceOrientation();
+                },
+                (error) => {
+                    showError(`Erreur de géolocalisation: ${error.message}`);
+                    locationBtn.disabled = false;
+                    locationBtn.textContent = '📍 Obtenir ma position';
+                },
+                options
+            );
+        }
+
+        /**
+         * Obtenir l'orientation de l'appareil
+         */
+        function getDeviceOrientation() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                    const heading = event.alpha; // 0-360 degrés
+                    currentDirection = getCompassDirection(heading);
+                    directionSpan.textContent = currentDirection;
+                });
+            }
+        }
+
+        /**
+         * Convertir les degrés en direction cardinale
+         */
+        function getCompassDirection(heading) {
+            const directions = ['Nord', 'Nord-Est', 'Est', 'Sud-Est', 'Sud', 'Sud-Ouest', 'Ouest', 'Nord-Ouest'];
+            const index = Math.round(heading / 45) % 8;
+            return directions[index];
+        }
+
+        /**
+         * Appeler l'IA OpenRouter
+         */
+        async function guideMe() {
+            if (!apiKey) {
+                toggleApiSetup();
+                showError('Veuillez d\'abord configurer votre clé API');
+                return;
+            }
+
+            if (!currentLocation.lat || !currentLocation.lon) {
+                showError('Position non disponible. Veuillez autoriser la géolocalisation.');
+                return;
+            }
+
+            guideBtn.disabled = true;
+            loader.style.display = 'flex';
+            responseContainer.innerHTML = '';
+
+            try {
+                // Prompts varés pour des réponses différentes
+                const prompts = [
+                    `Tu es un guide touristique amusant parlant à des enfants. L'enfant est actuellement à (${currentLocation.lat.toFixed(4)}, ${currentLocation.lon.toFixed(4)}) et regarde vers ${currentDirection || 'une direction'}.
+
+Invente UNE observation historique amusante et éducative sur quelque chose qui pourrait être à proximité. Rends-la mystérieuse, captivante et pédagogique. Commence par une direction (par exemple "À votre droite..." ou "Devant vous..."). Réponds en français, maximum 3 phrases.`,
+
+                    `Acting as an entertaining tour guide for children, describe ONE fascinating historical or natural fact about something that might be near coordinates (${currentLocation.lat.toFixed(4)}, ${currentLocation.lon.toFixed(4)}). The child is facing ${currentDirection || 'an unknown direction'}.
+
+Write in French, make it exciting and age-appropriate. Include a directional cue (left, right, ahead, behind). Keep it short (2-3 sentences). Be creative and different from usual facts.`,
+
+                    `Tu es un guide expert qui explique les mystères du monde à des enfants. Position: (${currentLocation.lat.toFixed(4)}, ${currentLocation.lon.toFixed(4)}), direction: ${currentDirection || 'inconnue'}.
+
+Partage UNE anecdote surprenante, un secret géographique ou historique sur ce lieu. Sois enthousiaste, ludique et instructif. Utilise des directions (gauche, droite, devant, derrière). Français uniquement, 2-3 phrases maximum.`
+                ];
+
+                const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': window.location.href,
+                    },
+                    body: JSON.stringify({
+                        model: 'mistralai/mistral-7b-instruct:free',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: randomPrompt
+                            }
+                        ],
+                        temperature: 0.8,
+                        max_tokens: 200
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`OpenRouter Error: ${errorData.error?.message || response.statusText}`);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content.trim();
+
+                displayResponse(aiResponse);
+                speakText(aiResponse);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(`Erreur: ${error.message}`);
+            } finally {
+                loader.style.display = 'none';
+                guideBtn.disabled = false;
+            }
+        }
+
+        /**
+         * Afficher la réponse de l'IA
+         */
+        function displayResponse(text) {
+            responseContainer.innerHTML = `<div class="response-text">${escapeHtml(text)}</div>`;
+        }
+
+        /**
+         * Lire le texte à haute voix
+         */
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Synthèse vocale non disponible');
+                return;
+            }
+
+            // Arrêter toute parole en cours
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            utterance.rate = 0.95;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            utterance.onstart = () => {
+                isSpeaking = true;
+                guideBtn.style.display = 'none';
+                stopBtn.style.display = 'flex';
+            };
+
+            utterance.onend = () => {
+                isSpeaking = false;
+                guideBtn.style.display = 'flex';
+                stopBtn.style.display = 'none';
+            };
+
+            utterance.onerror = (event) => {
+                console.error('Erreur synthèse vocale:', event.error);
+                isSpeaking = false;
+                guideBtn.style.display = 'flex';
+                stopBtn.style.display = 'none';
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        /**
+         * Arrêter la lecture vocale
+         */
+        function stopSpeech() {
+            window.speechSynthesis.cancel();
+            isSpeaking = false;
+            guideBtn.style.display = 'flex';
+            stopBtn.style.display = 'none';
+        }
+
+        /**
+         * Afficher une erreur
+         */
+        function showError(message) {
+            responseContainer.innerHTML = `<div class="response-text" style="border-left-color: #ff6b6b; color: #d32f2f;">⚠️ ${escapeHtml(message)}</div>`;
+        }
+
+        /**
+         * Échapper les caractères HTML
+         */
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
