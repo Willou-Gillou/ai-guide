@@ -318,6 +318,101 @@
       color: #1d4ed8;
       margin-top: 8px;
     }
+
+    /* ——— API Key section ——— */
+    .apikey-section {
+      margin-top: 18px;
+      border: 2px dashed #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: #f8fafc;
+      transition: border-color .2s;
+    }
+    .apikey-section.saved {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+    }
+    .apikey-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .apikey-label {
+      font-size: .82rem;
+      font-weight: 800;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .apikey-status {
+      font-size: .75rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .apikey-status.ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .apikey-body {
+      display: none;
+      margin-top: 12px;
+      gap: 8px;
+      flex-direction: column;
+    }
+    .apikey-body.open { display: flex; }
+    .apikey-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-family: 'Nunito', monospace;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text);
+      background: white;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .apikey-input:focus { border-color: var(--sky); }
+    .apikey-actions { display: flex; gap: 8px; }
+    .apikey-save {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 10px;
+      background: var(--sky);
+      color: white;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .apikey-save:hover { background: var(--sky-dark); }
+    .apikey-clear {
+      padding: 9px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      background: white;
+      color: #ef4444;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: .82rem;
+      cursor: pointer;
+    }
+    .apikey-hint {
+      font-size: .75rem;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+    .apikey-hint a { color: var(--sky-dark); }
+
   </style>
 </head>
 <body>
@@ -346,6 +441,23 @@
   </div>
   <div id="dir-badge-wrap"></div>
 
+  <div class="apikey-section" id="apiKeySection">
+    <div class="apikey-header" onclick="toggleApiPanel()">
+      <span class="apikey-label">🔑 Clé OpenRouter</span>
+      <span class="apikey-status" id="apiKeyStatus">Non configurée</span>
+    </div>
+    <div class="apikey-body" id="apiKeyBody">
+      <input class="apikey-input" id="apiKeyInput" type="password"
+        placeholder="sk-or-v1-…" autocomplete="off" spellcheck="false" />
+      <div class="apikey-actions">
+        <button class="apikey-save" onclick="saveApiKey()">💾 Sauvegarder</button>
+        <button class="apikey-clear" onclick="clearApiKey()">🗑</button>
+      </div>
+      <span class="apikey-hint">Clé gratuite sur <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></span>
+    </div>
+  </div>
+
+
   <button class="guide-btn" id="guideBtn" disabled>
     <span class="btn-icon">🧭</span> Guide-moi !
   </button>
@@ -371,7 +483,7 @@
 
   <div class="error-msg" id="errorMsg"></div>
 
-  <div class="footer">v0.0.1 · OpenRouter · GPS</div>
+  <div class="footer">v0.0.2 · OpenRouter · GPS</div>
 </div>
 
 <script>
@@ -398,14 +510,14 @@ function initGeo() {
       if (pos.coords.heading != null) heading = pos.coords.heading;
       setLocText('Position trouvée ✅',
         `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`);
-      document.getElementById('guideBtn').disabled = false;
+      refreshGuideBtn();
       updateCompass(heading);
       updateDirBadge(heading);
     },
     err => {
       setLocText('GPS indisponible — position approx.', '');
       // Still allow button with no GPS (will use IP-based guess by AI)
-      document.getElementById('guideBtn').disabled = false;
+      refreshGuideBtn();
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
@@ -463,12 +575,81 @@ if (window.DeviceOrientationEvent) {
 }
 
 // ———————————————————————————————
+// API KEY MANAGEMENT (localStorage)
+// ———————————————————————————————
+const LS_KEY = 'guideIA_openrouter_key';
+const MODEL  = "meta-llama/llama-3.2-3b-instruct:free";
+
+function getApiKey() {
+  return localStorage.getItem(LS_KEY) || '';
+}
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) { alert('Entre une clé valide !'); return; }
+  localStorage.setItem(LS_KEY, val);
+  updateApiKeyUI(true);
+  document.getElementById('apiKeyBody').classList.remove('open');
+  // enable guide button if GPS already ready
+  refreshGuideBtn();
+}
+
+function clearApiKey() {
+  localStorage.removeItem(LS_KEY);
+  document.getElementById('apiKeyInput').value = '';
+  updateApiKeyUI(false);
+  refreshGuideBtn();
+}
+
+function toggleApiPanel() {
+  const body = document.getElementById('apiKeyBody');
+  body.classList.toggle('open');
+  // pre-fill input with masked key if saved
+  if (body.classList.contains('open')) {
+    const k = getApiKey();
+    document.getElementById('apiKeyInput').value = k;
+    document.getElementById('apiKeyInput').focus();
+  }
+}
+
+function updateApiKeyUI(hasSaved) {
+  const section = document.getElementById('apiKeySection');
+  const status  = document.getElementById('apiKeyStatus');
+  if (hasSaved) {
+    section.classList.add('saved');
+    status.classList.add('ok');
+    status.textContent = '✓ Configurée';
+  } else {
+    section.classList.remove('saved');
+    status.classList.remove('ok');
+    status.textContent = 'Non configurée';
+  }
+}
+
+function refreshGuideBtn() {
+  const hasKey = !!getApiKey();
+  const hasGps = (userLat !== null) || true; // allow even without GPS
+  document.getElementById('guideBtn').disabled = !hasKey;
+}
+
+// Init API key UI on load
+(function initApiKeyUI() {
+  const k = getApiKey();
+  if (k) updateApiKeyUI(true);
+  else {
+    updateApiKeyUI(false);
+    // auto-open panel so user sees it right away
+    document.getElementById('apiKeyBody').classList.add('open');
+  }
+})();
+
+// ———————————————————————————————
 // OPENROUTER API
 // ———————————————————————————————
-const OPENROUTER_API_KEY = "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";
-const MODEL = "mistralai/mistral-7b-instruct:free";
 
 async function fetchGuide() {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error("Configure d\'abord ta clé OpenRouter 🔑");
   callCount++;
 
   const locPart = (userLat && userLon)
@@ -495,7 +676,7 @@ Donne-moi UN seul fait historique ou anecdote fascinante sur un lieu, monument, 
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+      "Authorization": `Bearer ${getApiKey()}`,
       "HTTP-Referer": window.location.href,
       "X-Title": "Guide IA"
     },
@@ -509,7 +690,12 @@ Donne-moi UN seul fait historique ou anecdote fascinante sur un lieu, monument, 
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Erreur HTTP ${res.status}`);
+    const status = res.status;
+    const detail = err?.error?.message || "Erreur HTTP " + status;
+    if (status === 401 || status === 403) {
+      throw new Error("Clé API invalide ou compte introuvable (" + status + "). Vérifie ta clé sur openrouter.ai");
+    }
+    throw new Error(detail);
   }
 
   const data = await res.json();
